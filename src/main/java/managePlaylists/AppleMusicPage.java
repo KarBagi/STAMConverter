@@ -1,23 +1,42 @@
 package managePlaylists;
 
 // AppleMusicPage.java
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import settingsConfiguration.DriverManager;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.InputEvent;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class AppleMusicPage {
 
-    private WebDriver driver;
+    ArrayList<String> playlistDetails;
 
-    public AppleMusicPage(WebDriver driver) {
+    private WebDriver driver;
+    private DriverManager driverManager;
+
+    public AppleMusicPage(WebDriver driver, DriverManager driverManager) {
         this.driver = driver;
+        this.driverManager = driverManager;
+    }
+
+    public void initialize() {
+        try {
+            driver.get("https://music.apple.com/");
+
+            as(driver);
+
+        } finally {
+            driverManager.closeDriver();
+        }
     }
 
     public void openPlaylistsTab() {
@@ -31,7 +50,7 @@ public class AppleMusicPage {
             wait.until(ExpectedConditions.urlContains("playlists"));
 
         } catch (Exception e) {
-            System.out.println("Nie udało się znaleźć zakładki z playlistami.");
+            System.out.println("The playlist tab could not be found.");
             e.printStackTrace();
         }
     }
@@ -48,7 +67,7 @@ public class AppleMusicPage {
                     .collect(Collectors.toList());
 
         } catch (Exception e) {
-            System.out.println("Nie udało się pobrać nazw playlist.");
+            System.out.println("Failed to download playlist names.");
             e.printStackTrace();
             return List.of();
         }
@@ -68,44 +87,131 @@ public class AppleMusicPage {
                 }
             }
 
-            System.out.println("Nie znaleziono playlisty o nazwie: " + playlistName);
+            System.out.println("The playlist named was not found: " + playlistName);
 
         } catch (Exception e) {
-            System.out.println("Wystąpił błąd podczas próby otwarcia playlisty.");
+            System.out.println("An error occurred while trying to open a playlist.");
             e.printStackTrace();
         }
     }
 
-    public ArrayList<ArrayList<String>> getSongsAndArtists() {
-        ArrayList<ArrayList<String>> playlistDetails = new ArrayList<>();
+    public ArrayList<String> getSongsAndArtists() {
+        ArrayList<String> playlistDetails = new ArrayList<>();
         try {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
             wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div.songs-list-row__song-name[data-testid='track-title']")));
 
-            WebElement playlistTitleElement = driver.findElement(By.cssSelector("h1")); // Upewnij się, że selektor jest poprawny
+            WebElement playlistTitleElement = driver.findElement(By.cssSelector("h1"));
             String playlistTitle = playlistTitleElement.getText();
 
-            List<WebElement> songElements = driver.findElements(By.cssSelector("div.songs-list-row__song-name[data-testid='track-title']"));
-            List<WebElement> artistElements = driver.findElements(By.cssSelector("a[data-testid='click-action'][href^='https://music.apple.com']"));
+            List<WebElement> songElements = driver.findElements(By.cssSelector("[data-testid='track-column-song']"));
+            List<WebElement> artistElements = driver.findElements(By.cssSelector("[data-testid='track-column-secondary']"));
 
-            ArrayList<String> playlistInfo = new ArrayList<>();
-            playlistInfo.add(playlistTitle);
 
             for (int i = 0; i < songElements.size(); i++) {
                 String songTitle = songElements.get(i).getText();
-                String artistName = i < artistElements.size() ? artistElements.get(i).getText() : "Nieznany artysta";
-                playlistInfo.add(songTitle + " - " + artistName);
+                String artistName = i < artistElements.size() ? artistElements.get(i).getText() : "Unknown artist";
+                playlistDetails.add(songTitle + " - " + artistName);
             }
 
-            playlistDetails.add(playlistInfo);
-
         } catch (Exception e) {
-            System.out.println("Wystąpił błąd podczas próby pobrania informacji o piosenkach.");
+            System.out.println("An error occurred while trying to download song information.");
             e.printStackTrace();
         }
 
         return playlistDetails;
     }
+
+    public void createPlaylist(WebDriver driver, String songName, String playlistName) {
+
+        driver.get("https://music.apple.com/pl/search?term=" + songName);
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+
+        WebElement firstSong = driver.findElement(By.cssSelector("[data-testid='grid-item']"));
+
+        WebElement moreButton = firstSong.findElement(By.cssSelector("[data-testid='more-button']"));
+        moreButton.click();
+
+        WebElement addToPlaylist = moreButton.findElement(By.xpath("//*[@title='Add to Playlist']"));
+        addToPlaylist.click();
+
+        WebElement newPlaylist = addToPlaylist.findElement(By.xpath("//*[@title='New Playlist']"));
+        newPlaylist.click();
+
+        WebElement form = driver.findElement(By.xpath("//form[@class='playlist-form svelte-110x198']"));
+
+        WebElement playlistTitle = form.findElement(By.cssSelector("[data-testid='playlist-title-input']"));
+
+        playlistTitle.sendKeys(playlistName);
+
+        WebElement buttons = form.findElement(By.className("buttons"));
+        WebElement submitButton = buttons.findElement(By.className("submit-button"));
+        WebElement createButton = submitButton.findElement(By.className("svelte-i2es3x"));
+
+        createButton.click();
+
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void addSongToPlaylist(String songName, String playlistName) {
+        driver.get("https://music.apple.com/pl/search?term=" + songName);
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+
+        WebElement firstSong = driver.findElement(By.cssSelector("[data-testid='grid-item']"));
+
+        WebElement moreButton = firstSong.findElement(By.cssSelector("[data-testid='more-button']"));
+        moreButton.click();
+
+        WebElement addToPlaylist = driver.findElement(By.xpath("//*[@title='Add to Playlist']"));
+        addToPlaylist.click();
+
+        clickPlaylistByTitle(playlistName);
+    }
+
+    private void clickPlaylistByTitle(String playlistName) {
+        try {
+           WebElement playlistButton = driver.findElement(By.xpath("//div[@class='contextual-menu__group']" +
+                    "//button[@title='" + playlistName + "']"));
+
+            playlistButton.click();
+
+            Thread.sleep(500);
+
+            System.out.println("Added to playlist " + playlistName);
+
+        } catch (Exception e) {
+            System.out.println("Nie znaleziono playlisty o nazwie: " + playlistName);
+        }
+    }
+
+    private void as(WebDriver driver) {
+        ArrayList<String> songs = new ArrayList<>();
+        songs.add("Ocean Drive - Duke Dumont");
+        songs.add("Music Sounds Better with You - Stardust");
+        songs.add("My Love (feat. Jess Glynne) - Route 94");
+        songs.add("Lady (Hear Me Tonight) - Modjo");
+        songs.add("Pumped Up Kicks - Foster the People");
+        songs.add("Feel Good Inc. - Gorillaz");
+        songs.add("Habits (Stay High) [Hippie Sabotage Remix] - Tove Lo");
+        songs.add("Feels Like Summer - Childish Gambino");
+        songs.add("I Got U (feat. Jax Jones) - Duke Dumont");
+
+
+        createPlaylist(driver, songs.get(0),"kocham cie stackOverflow");
+        songs.remove(0);
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        for (String song : songs) {
+            addSongToPlaylist(song, "kocham cie stackOverflow");
+        }
+    }
 }
-
-
