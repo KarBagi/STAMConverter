@@ -1,0 +1,41 @@
+/* Stylizacja ScrollPane */
+.custom-scroll-pane {
+    -fx-background-color: transparent; /* Tło ScrollPane */
+    -fx-border-color: #666666;         /* Kolor obramowania */
+    -fx-border-width: 2;              /* Grubość obramowania */
+    -fx-border-radius: 10;            /* Zaokrąglenie obramowania */
+    -fx-background-radius: 10;
+}
+
+.custom-scroll-pane .viewport {
+    -fx-background-color: #666666;    /* Tło wnętrza ScrollPane */
+    -fx-padding: 10;                  /* Wewnętrzny odstęp */
+    -fx-background-radius: 10;        /* Zaokrąglenie tła */
+}
+
+.custom-scroll-pane .scroll-bar {
+    -fx-background-color: transparent; /* Tło paska przewijania */
+    -fx-background-radius: 10;    /* Zaokrąglenie paska */
+}
+
+/* Zmiana wysokości uchwytu (thumb) paska pionowego */
+.custom-scroll-pane .scroll-bar:vertical .thumb {
+    -fx-min-height: 30; /* Minimalna wysokość uchwytu */
+    -fx-max-height: 40; /* Maksymalna wysokość uchwytu */
+}
+
+/* Ukrycie przycisków przewijania */
+.custom-scroll-pane .scroll-bar .increment-button,
+.custom-scroll-pane .scroll-bar .decrement-button {
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+    -fx-padding: 0;
+    -fx-background-color: #666666;
+    -fx-opacity: 0;
+}
+
+/* Stylizacja uchwytu paska przewijania */
+.custom-scroll-pane .scroll-bar .thumb {
+    -fx-background-color: #ffffff; /* Kolor uchwytu przewijania */
+    -fx-background-radius: 5;    /* Zaokrąglenie uchwytu */
+}

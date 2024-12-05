@@ -1,10 +1,8 @@
-package managePlaylists;
+package com.example.samtconverter.AppleMusic;
 
-// AppleMusicPage.java
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import settingsConfiguration.DriverManager;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -12,27 +10,27 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class AppleMusicPage {
-
-    ArrayList<String> playlistDetails;
+public class SeleniumAppleMusic {
 
     private WebDriver driver;
     private DriverManager driverManager;
 
-    public AppleMusicPage(WebDriver driver, DriverManager driverManager) {
+    public SeleniumAppleMusic(WebDriver driver, DriverManager driverManager) {
         this.driver = driver;
         this.driverManager = driverManager;
     }
 
-    public void initialize() {
+    public List<String> getPlaylistDetails(List<String> playlists) {
         try {
             driver.get("https://music.apple.com/");
 
-            as(driver);
+            openPlaylistsTab();
+            playlists = getPlaylistNames();
 
         } finally {
             driverManager.closeDriver();
         }
+        return playlists;
     }
 
     public void openPlaylistsTab() {
@@ -170,7 +168,7 @@ public class AppleMusicPage {
 
     private void clickPlaylistByTitle(String playlistName) {
         try {
-           WebElement playlistButton = driver.findElement(By.xpath("//div[@class='contextual-menu__group']" +
+            WebElement playlistButton = driver.findElement(By.xpath("//div[@class='contextual-menu__group']" +
                     "//button[@title='" + playlistName + "']"));
 
             playlistButton.click();
@@ -221,3 +219,4 @@ public class AppleMusicPage {
         }
     }
 }
+

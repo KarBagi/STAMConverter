@@ -1,4 +1,4 @@
-package settingsConfiguration;
+package com.example.samtconverter.AppleMusic;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.WebDriver;
@@ -31,3 +31,4 @@ public class DriverManager {
         }
     }
 }
+
