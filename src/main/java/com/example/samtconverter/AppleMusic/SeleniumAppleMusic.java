@@ -22,7 +22,7 @@ public class SeleniumAppleMusic {
 
     public List<String> getPlaylistDetails(List<String> playlists) {
         try {
-            driver.get("https://music.apple.com/");
+            driver.get("https://music.apple.com/pl/new");
 
             openPlaylistsTab();
             playlists = getPlaylistNames();
@@ -132,7 +132,7 @@ public class SeleniumAppleMusic {
         WebElement newPlaylist = addToPlaylist.findElement(By.xpath("//*[@title='New Playlist']"));
         newPlaylist.click();
 
-        WebElement form = driver.findElement(By.xpath("//form[@class='playlist-form svelte-110x198']"));
+        WebElement form = driver.findElement(By.xpath("//form[@class='playlist-form svelte-1kd2e9n']"));
 
         WebElement playlistTitle = form.findElement(By.cssSelector("[data-testid='playlist-title-input']"));
 
@@ -140,7 +140,7 @@ public class SeleniumAppleMusic {
 
         WebElement buttons = form.findElement(By.className("buttons"));
         WebElement submitButton = buttons.findElement(By.className("submit-button"));
-        WebElement createButton = submitButton.findElement(By.className("svelte-i2es3x"));
+        WebElement createButton = submitButton.findElement(By.className("svelte-yk984v"));
 
         createButton.click();
 
@@ -152,18 +152,44 @@ public class SeleniumAppleMusic {
     }
 
     public void addSongToPlaylist(String songName, String playlistName) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         driver.get("https://music.apple.com/pl/search?term=" + songName);
         driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
 
-        WebElement firstSong = driver.findElement(By.cssSelector("[data-testid='grid-item']"));
+        List<WebElement> songs = driver.findElements(By.cssSelector("[data-testid='grid-item']"));
 
-        WebElement moreButton = firstSong.findElement(By.cssSelector("[data-testid='more-button']"));
-        moreButton.click();
 
-        WebElement addToPlaylist = driver.findElement(By.xpath("//*[@title='Add to Playlist']"));
-        addToPlaylist.click();
+        for (WebElement song : songs) {
+            // Pobierz pełny tekst z elementu
+            String fullText = song.getText();
 
-        clickPlaylistByTitle(playlistName);
+            // Rozbij pełny tekst na linie, aby łatwiej przetworzyć
+            String[] lines = fullText.split("\n");
+
+            if (!fullText.toLowerCase().contains("song")) {
+                continue; // Jeśli nie, przejdź do następnego elementu
+            }
+
+            if (lines.length >= 2) { // Sprawdź, czy mamy przynajmniej dwie linie
+                String actualTrackName = lines[0].trim(); // Pierwsza linia - nazwa piosenki
+                String actualArtistName = lines[1].trim().replace("Song · ", ""); // Druga linia - artysta
+
+                // Porównanie z sformatowanym tekstem
+                String actualText = actualTrackName + " - " + actualArtistName;
+
+                if (songName.equalsIgnoreCase(actualText)) {
+                    WebElement moreButton = song.findElement(By.cssSelector("[data-testid='more-button']"));
+                    moreButton.click();
+
+                    //WebElement addToPlaylist = driver.findElement(By.xpath("//*[@title='Add to Playlist']"));
+                    WebElement addToPlaylist = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@title='Add to Playlist']")));
+                    addToPlaylist.click();
+
+                    clickPlaylistByTitle(playlistName);
+                    break;
+                }
+            }
+        }
     }
 
     private void clickPlaylistByTitle(String playlistName) {
@@ -218,5 +244,24 @@ public class SeleniumAppleMusic {
             }
         }
     }
+
+    public void add(List<String> tracks, String playlistName) {
+        createPlaylist(driver, tracks.get(0),playlistName);
+        tracks.remove(0);
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        for (String song : tracks) {
+            addSongToPlaylist(song, playlistName);
+        }
+    }
 }
+
+
+
+
 

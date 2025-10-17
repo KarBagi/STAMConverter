@@ -15,7 +15,9 @@ public class DriverManager {
 
         String userHome = System.getProperty("user.home");
         String chromeUserData = userHome + "\\AppData\\Local\\Google\\Chrome\\User Data";
+        String newProfile = chromeUserData + "\\SeleniumProfile";
         options.addArguments("user-data-dir=" + chromeUserData);
+        options.addArguments("user-data-dir=" + newProfile);
         options.addArguments("profile-directory=Default");
         options.addArguments("--headless");
         options.addArguments("--disable-gpu");

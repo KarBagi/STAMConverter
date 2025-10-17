@@ -2,6 +2,7 @@ package com.example.samtconverter;
 
 import com.example.samtconverter.AppleMusic.DriverManager;
 import com.example.samtconverter.AppleMusic.SeleniumAppleMusic;
+import com.example.samtconverter.Spotify.SpotifyAuthorization;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -12,6 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.openqa.selenium.WebDriver;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,9 +60,18 @@ public class MainPageController {
 
     private boolean isChecked = false;
 
+    private int playlistVboxIdChecked = 0;
+
+    private String playlistVboxNameChecked = "";
+
+    private Integer i = 0;
+
     List<String> playlists = new ArrayList<>();
+    List<String> spotifyPlaylists = new ArrayList<>();
+    List<String> appleMusicPlaylists = new ArrayList<>();
 
     SeleniumAppleMusic seleniumAppleMusic;
+    SpotifyAuthorization spotifyAuthorization = new SpotifyAuthorization();
 
     ImageView[] appChoices1;
     ImageView[] appChoices2;
@@ -83,6 +94,8 @@ public class MainPageController {
     public boolean spotify1(javafx.scene.input.MouseEvent mouseEvent) {
 
         appChoice("spotifyButton1", appChoices1);
+        showSpotifyPlaylists();
+        showPlaylists(spotifyPlaylists, true);
 
         return true;
     }
@@ -91,7 +104,8 @@ public class MainPageController {
     public boolean appleMusic1(javafx.scene.input.MouseEvent mouseEvent) {
         appChoice("appleMusicButton1", appChoices1);
 
-        showAppleMusicPlaylists(true);
+        showAppleMusicPlaylists();
+        showPlaylists(appleMusicPlaylists, true);
         return true;
     }
 
@@ -105,6 +119,8 @@ public class MainPageController {
     @FXML
     public boolean spotify2(javafx.scene.input.MouseEvent mouseEvent) {
         appChoice("spotifyButton2", appChoices2);
+        showSpotifyPlaylists();
+        showPlaylists(spotifyPlaylists, true);
 
         return true;
     }
@@ -113,7 +129,8 @@ public class MainPageController {
     public boolean appleMusic2(javafx.scene.input.MouseEvent mouseEvent) {
         appChoice("appleMusicButton2", appChoices2);
 
-        showAppleMusicPlaylists(false);
+        showAppleMusicPlaylists();
+        showPlaylists(appleMusicPlaylists, false);
 
         return true;
     }
@@ -137,6 +154,29 @@ public class MainPageController {
         arrowChoice("arrowRightButton", arrowChoices1);
 
         return true;
+    }
+
+    @FXML
+    public void submitButton() throws IOException {
+        List<String> spotifyPlaylistsId = spotifyAuthorization.getPlaylistsId();
+        DriverManager driverManager = new DriverManager();
+        WebDriver driver = driverManager.initializeDriver();
+
+        seleniumAppleMusic = new SeleniumAppleMusic(driver, driverManager);
+
+/*        for(int i = 0; i < spotifyPlaylists.size(); i++){
+            if(spotifyPlaylists.get(i).equals("Mac")){
+                System.out.println(i);
+                break;
+            }
+        }*/
+
+        //System.out.println(spotifyPlaylists.get(0));
+        List<String> spotifyPlaylistsTracks = spotifyAuthorization.fetchTracksFromPlaylist(spotifyPlaylistsId.get(playlistVboxIdChecked));
+        seleniumAppleMusic.add(spotifyPlaylistsTracks, playlistVboxNameChecked);
+
+        //TODO dodaje się cały album dla piosenek, które się tak samo nazywają xdxdddddxddxxdxdd
+        //System.out.println(spotifyAuthorization.fetchTracksFromPlaylist(spotifyPlaylistsId.get(0)));
     }
 
     public void appChoice(String appName, ImageView[] appPool) {
@@ -173,18 +213,13 @@ public class MainPageController {
         }
     }
 
-    public void showAppleMusicPlaylists(boolean whichVBox) {
-        DriverManager driverManager = new DriverManager();
-        WebDriver driver = driverManager.initializeDriver();
+    public void showPlaylists(List<String> playlists, boolean whichVBox) {
 
-
-        seleniumAppleMusic = new SeleniumAppleMusic(driver, driverManager);
-        playlists = seleniumAppleMusic.getPlaylistDetails(playlists);
-
-        for (String playlist : playlists.subList(1, playlists.size())) {
+        for (String playlist : playlists.subList(0, playlists.size())) {
             HBox playlistRow = new HBox();
             playlistRow.setStyle("-fx-background-color: #666666; -fx-padding: 10; -fx-border-color: white; -fx-border-width: 0 0 1 0;");
             playlistRow.setAlignment(Pos.CENTER_LEFT);
+            playlistRow.setUserData(i);
 
             Label playlistLabel = new Label(playlist);
             playlistLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
@@ -192,18 +227,47 @@ public class MainPageController {
             playlistRow.getChildren().add(playlistLabel);
 
             playlistRow.setOnMouseClicked(event -> {
-                if(!isChecked){
+
+                if (!isChecked) {
                     playlistRow.setStyle("-fx-background-color: #828282; -fx-padding: 10; -fx-border-color: white; -fx-border-width: 0 0 1 0;");
                     isChecked = true;
-                }
-                else{
+
+                    playlistVboxIdChecked = (int) playlistRow.getUserData();
+                    playlistVboxNameChecked = playlistLabel.getText();
+
+                    System.out.println(playlistVboxIdChecked + " " + playlistVboxNameChecked);
+                } else {
                     playlistRow.setStyle("-fx-background-color: #666666; -fx-padding: 10; -fx-border-color: white; -fx-border-width: 0 0 1 0;");
                     isChecked = false;
+                    playlistVboxIdChecked = i;
                 }
             });
 
-            if(whichVBox) playlistsVBox1.getChildren().add(playlistRow);
+            if (whichVBox) playlistsVBox1.getChildren().add(playlistRow);
             else playlistsVBox2.getChildren().add(playlistRow);
+            i++;
         }
+    }
+
+    public void showSpotifyPlaylists() {
+        spotifyPlaylists.clear();
+
+        try {
+            spotifyAuthorization.initiate();
+            spotifyPlaylists = spotifyAuthorization.fetchPlaylists();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void showAppleMusicPlaylists() {
+        appleMusicPlaylists.clear();
+
+        DriverManager driverManager = new DriverManager();
+        WebDriver driver = driverManager.initializeDriver();
+
+        seleniumAppleMusic = new SeleniumAppleMusic(driver, driverManager);
+        appleMusicPlaylists = seleniumAppleMusic.getPlaylistDetails(playlists);
+
     }
 }
